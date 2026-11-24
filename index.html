@@ -93,7 +93,7 @@ function renderNow() {
   const latest = ENTRIES.find((e) => e.ok);
   const latestAny = ENTRIES[0];
   document.getElementById("now").innerHTML = latest ? statusCards(latest)
-    : `<div class="card empty">${META.storage === false ? "No storage connected, so the history is in your ntfy app: every check from your iPhone Shortcut is posted there silently with its time." : "No saved checks yet. Run the iPhone Shortcut once and tap Refresh."}</div>`;
+    : `<div class="card empty">${META.storage === false ? "No storage connected, so the history is in your ntfy app: every check is posted there silently with its time." : "No saved checks yet. The first automatic check (every 15 min) will appear here, so tap Refresh in a few minutes."}</div>`;
   document.getElementById("lastChecked").innerHTML = latestAny
     ? `Last check ${ago(latestAny.t)}${latestAny.ok ? "" : ` · <span class="err">failed: ${esc(latestAny.error)}</span>`}` : "";
 }
