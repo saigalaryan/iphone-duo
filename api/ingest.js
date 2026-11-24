@@ -9,14 +9,19 @@
 // Optional: ?summary=1 also pushes a status notification.
 import { entryFromData, recordAndAlert, authorized } from "../lib/core.js";
 
-async function readJson(req) {
+// Returns { data, raw } - raw text kept so we can show what actually arrived
+async function readBody(req) {
   const b = req.body;
-  if (b && typeof b === "object" && !Buffer.isBuffer(b)) return b;
-  if (typeof b === "string" && b.trim()) return JSON.parse(b);
-  if (Buffer.isBuffer(b) && b.length) return JSON.parse(b.toString("utf8"));
+  if (b && typeof b === "object" && !Buffer.isBuffer(b)) return { data: b, raw: JSON.stringify(b) };
   let raw = "";
-  for await (const chunk of req) raw += chunk;
-  return JSON.parse(raw);
+  if (typeof b === "string") raw = b;
+  else if (Buffer.isBuffer(b)) raw = b.toString("utf8");
+  else for await (const chunk of req) raw += chunk;
+  try {
+    return { data: JSON.parse(raw), raw };
+  } catch {
+    return { data: null, raw };
+  }
 }
 
 export default async function handler(req, res) {
@@ -30,12 +35,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  let data;
-  try {
-    data = await readJson(req);
-  } catch {
-    data = null;
-  }
+  const { data, raw } = await readBody(req).catch(() => ({ data: null, raw: "" }));
 
   const summary = new URL(req.url, "http://x").searchParams.get("summary") === "1";
   const entry = entryFromData(data, "iphone");
@@ -45,5 +45,12 @@ export default async function handler(req, res) {
   const lines = entry.ok
     ? Object.values(entry.items).map((it, i) => `${i ? "Night Sky" : "Star White"}: ${it.pickup.length ? "PICKUP AVAILABLE" : "no pickup"}; ${it.delivery || "no delivery estimate"}`)
     : [`Failed: ${entry.error}`];
-  res.status(entry.ok ? 200 : 422).json({ ok: entry.ok, message: lines.join(" | "), saved: result.saved, alertsSent: result.alertsSent });
+  const debug = entry.ok ? undefined : {
+    contentType: req.headers?.["content-type"] || null,
+    bytes: raw.length,
+    title: (raw.match(/<title>([^<]*)<\/title>/i) || [])[1] || null,
+    jsonKeys: data && typeof data === "object" ? Object.keys(data).slice(0, 10) : null,
+    start: raw.slice(0, 200),
+  };
+  res.status(entry.ok ? 200 : 422).json({ ok: entry.ok, message: lines.join(" | "), debug, saved: result.saved, alertsSent: result.alertsSent });
 }
