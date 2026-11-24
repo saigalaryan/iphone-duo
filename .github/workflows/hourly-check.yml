@@ -1,0 +1,18 @@
+# Runs the iPhone Duo stock check every hour (Vercel's free plan only allows a
+# daily cron). No secrets needed: /api/run limits itself to one check per 25 min.
+name: Hourly iPhone Duo check
+
+on:
+  schedule:
+    - cron: "7 * * * *"   # every hour at :07 UTC (:37 IST)
+  workflow_dispatch: {}    # "Run workflow" button in the Actions tab
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Run check on Vercel
+        run: |
+          curl -sS --max-time 60 "https://iphone-duo-virid.vercel.app/api/run"
+          echo
