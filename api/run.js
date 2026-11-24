@@ -3,7 +3,7 @@
 // runs if the last saved check is at least MIN_GAP_MIN minutes old (so it can't be spammed).
 import { runCheck, readLog, recordAndAlert, authorized, HAS_STORAGE } from "../lib/core.js";
 
-const MIN_GAP_MIN = 10;
+const MIN_GAP_MIN = 5;
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
