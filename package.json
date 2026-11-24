@@ -1,0 +1,8 @@
+{
+  "name": "duo-watch",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Watches Apple Store USA for iPhone Duo 256GB (unlocked) and pushes alerts to your phone via ntfy.",
+  "type": "module",
+  "engines": { "node": ">=18" }
+}

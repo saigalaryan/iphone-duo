@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>iPhone Duo Watch</title>
+<style>
+  :root { color-scheme: light dark; --bg:#f5f5f7; --card:#fff; --fg:#1d1d1f; --mut:#6e6e73; --line:#e5e5ea;
+          --ok:#1a7f37; --no:#b42318; --acc:#0071e3; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#000; --card:#1c1c1e; --fg:#f5f5f7; --mut:#98989d; --line:#2c2c2e;
+          --ok:#30d158; --no:#ff6961; } }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; background:var(--bg); color:var(--fg); }
+  main { max-width:760px; margin:0 auto; padding:26px 16px 48px; }
+  h1 { font-size:28px; margin:0 0 4px; letter-spacing:-.02em; }
+  h2 { font-size:19px; margin:28px 0 10px; letter-spacing:-.01em; }
+  .sub, .mut { color:var(--mut); font-size:13.5px; }
+  .sub { margin:0 0 18px; }
+  .card { background:var(--card); border-radius:16px; padding:16px; margin-bottom:10px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  @media (max-width:560px) { .grid { grid-template-columns:1fr; } }
+  .row { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .name { font-weight:600; }
+  .pill { font-size:12.5px; font-weight:600; padding:3px 10px; border-radius:999px; white-space:nowrap; }
+  .yes { background:color-mix(in srgb, var(--ok) 16%, transparent); color:var(--ok); }
+  .nope { background:color-mix(in srgb, var(--no) 13%, transparent); color:var(--no); }
+  ul { margin:6px 0 0; padding-left:18px; }
+  li { margin:2px 0; }
+  .detail { font-size:14px; margin-top:8px; }
+  table { width:100%; border-collapse:collapse; font-size:13.5px; }
+  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--mut); font-weight:600; font-size:12.5px; }
+  td.ok { color:var(--ok); font-weight:600; } td.no { color:var(--mut); } td.err { color:var(--no); }
+  .tz { color:var(--mut); font-size:12px; display:block; }
+  button { border:0; border-radius:12px; padding:11px 16px; font:600 15px/1 inherit; background:var(--acc); color:#fff; cursor:pointer; }
+  button.secondary { background:transparent; color:var(--acc); padding:10px 0; }
+  button:disabled { opacity:.6; cursor:default; }
+  a { color:var(--acc); text-decoration:none; }
+  .err { color:var(--no); }
+  .empty { color:var(--mut); font-size:14px; }
+  .scroll { overflow-x:auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>iPhone Duo Watch</h1>
+  <p class="sub">256GB · Star White / Night Sky · Unlocked · no trade-in · no AppleCare · Apple Store USA · ZIP <span id="zip">37215</span>, stores within <span id="miles">50</span> mi</p>
+
+  <h2>Right now</h2>
+  <div id="now" class="grid"><div class="card empty">Loading…</div></div>
+  <div class="row" style="margin-top:6px">
+    <span class="mut" id="lastChecked"></span>
+    <button id="checkNow">Check now</button>
+  </div>
+  <div id="live"></div>
+
+  <h2>When it was available for pickup</h2>
+  <div id="windows"></div>
+
+  <h2>Delivery estimate changes</h2>
+  <div id="delivery"></div>
+
+  <h2>Check log</h2>
+  <div class="card scroll" id="logWrap"><div class="empty">Loading…</div></div>
+  <button class="secondary" id="more" hidden>Show more</button>
+</main>
+
+<script>
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+const fmt = (iso, tz) => new Date(iso).toLocaleString("en-IN", { timeZone: tz, day:"numeric", month:"short", hour:"numeric", minute:"2-digit", hour12:true });
+const when = (iso) => `${fmt(iso, "Asia/Kolkata")} IST<span class="tz">${fmt(iso, "America/Chicago")} Nashville</span>`;
+const dur = (a, b) => { const m = Math.round((new Date(b) - new Date(a)) / 60000); return m < 60 ? `${m} min` : m < 1440 ? `${(m/60).toFixed(1)} h` : `${(m/1440).toFixed(1)} days`; };
+const ago = (iso) => { const m = Math.round((Date.now() - new Date(iso)) / 60000); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m/60)} h ago` : `${Math.round(m/1440)} d ago`; };
+
+let META = { parts: { "MK1E4LL/A":"Star White", "MK1F4LL/A":"Night Sky" }, buyUrls: {} };
+let ENTRIES = [], shown = 50;
+
+function statusCards(entry) {
+  return Object.entries(META.parts).map(([part, name]) => {
+    const it = entry?.items?.[part];
+    if (!it) return `<div class="card"><div class="row"><span class="name">${esc(name)}</span><span class="pill nope">Unknown</span></div></div>`;
+    const pick = it.pickup.length > 0;
+    return `<div class="card">
+      <div class="row"><span class="name">${esc(name)}</span><span class="pill ${pick ? "yes" : "nope"}">${pick ? "Pickup available" : "No pickup"}</span></div>
+      <div class="detail">${pick ? `<ul>${it.pickup.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>` : `<span class="mut">No store within ${esc(META.maxMiles)} mi has it.</span>`}
+        <div style="margin-top:6px">Delivery: <b>${esc(it.delivery || "no estimate")}</b></div>
+        ${META.buyUrls[part] ? `<div style="margin-top:6px"><a href="${META.buyUrls[part]}" target="_blank" rel="noopener">Open on apple.com →</a></div>` : ""}
+      </div></div>`;
+  }).join("");
+}
+
+function renderNow() {
+  const latest = ENTRIES.find((e) => e.ok);
+  const latestAny = ENTRIES[0];
+  document.getElementById("now").innerHTML = latest ? statusCards(latest)
+    : `<div class="card empty">${META.storage === false ? "Storage isn't connected yet. Add Upstash Redis in Vercel (see README)." : "No saved checks yet. The first hourly check will appear here."}</div>`;
+  document.getElementById("lastChecked").innerHTML = latestAny
+    ? `Last check ${ago(latestAny.t)}${latestAny.ok ? "" : ` · <span class="err">failed: ${esc(latestAny.error)}</span>`}` : "";
+}
+
+function renderWindows() {
+  const chron = [...ENTRIES].reverse();
+  const out = [];
+  for (const [part, name] of Object.entries(META.parts)) {
+    let open = null; const wins = [];
+    for (const e of chron) {
+      if (!e.ok || !e.items?.[part]) continue;            // failed checks don't close a window
+      const stores = e.items[part].pickup;
+      if (stores.length) {
+        if (!open) open = { start: e.t, last: e.t, stores: new Set() };
+        open.last = e.t; stores.forEach((s) => open.stores.add(s.split(" – ")[0]));
+      } else if (open) { wins.push({ ...open, end: e.t }); open = null; }
+    }
+    if (open) wins.push({ ...open, end: null });
+    out.push(`<div class="card"><div class="name">${esc(name)}</div>${
+      wins.length ? `<div class="scroll"><table><tr><th>From</th><th>Until</th><th>Stores</th></tr>${
+        wins.reverse().map((w) => `<tr><td>${when(w.start)}</td><td>${w.end ? `${when(w.end)}<span class="tz">${dur(w.start, w.end)}</span>` : `<b class="pill yes">still available</b>`}</td><td>${[...w.stores].map(esc).join("<br>")}</td></tr>`).join("")
+      }</table></div>` : `<div class="empty" style="margin-top:6px">Not available for pickup in any saved check yet.</div>`}</div>`);
+  }
+  document.getElementById("windows").innerHTML = out.join("");
+}
+
+function renderDelivery() {
+  const chron = [...ENTRIES].reverse();
+  const rows = [];
+  for (const [part, name] of Object.entries(META.parts)) {
+    let prev = null;
+    for (const e of chron) {
+      const q = e.ok ? e.items?.[part]?.delivery : null;
+      if (!q || q === prev) continue;
+      rows.push({ t: e.t, name, from: prev, to: q }); prev = q;
+    }
+  }
+  rows.sort((a, b) => new Date(b.t) - new Date(a.t));
+  document.getElementById("delivery").innerHTML = rows.length
+    ? `<div class="card scroll"><table><tr><th>When</th><th>Colour</th><th>Delivery estimate</th></tr>${
+        rows.map((r) => `<tr><td>${when(r.t)}</td><td>${esc(r.name)}</td><td><b>${esc(r.to)}</b>${r.from ? `<span class="tz">was: ${esc(r.from)}</span>` : `<span class="tz">first seen</span>`}</td></tr>`).join("")
+      }</table></div>`
+    : `<div class="card empty">No delivery estimates recorded yet.</div>`;
+}
+
+function renderLog() {
+  const wrap = document.getElementById("logWrap");
+  if (!ENTRIES.length) { wrap.innerHTML = `<div class="empty">No checks saved yet.</div>`; document.getElementById("more").hidden = true; return; }
+  const parts = Object.entries(META.parts);
+  const cell = (it) => !it ? `<td class="no">–</td>` : it.pickup.length
+    ? `<td class="ok">✓ pickup (${it.pickup.length})<span class="tz">${esc(it.delivery || "")}</span></td>`
+    : `<td class="no">no pickup<span class="tz">${esc(it.delivery || "")}</span></td>`;
+  wrap.innerHTML = `<table><tr><th>Checked</th>${parts.map(([, n]) => `<th>${esc(n)}</th>`).join("")}</tr>${
+    ENTRIES.slice(0, shown).map((e) => `<tr><td>${when(e.t)}</td>${
+      e.ok ? parts.map(([p]) => cell(e.items?.[p])).join("") : `<td class="err" colspan="${parts.length}">Check failed: ${esc(e.error)}</td>`
+    }</tr>`).join("")}</table>`;
+  const more = document.getElementById("more");
+  more.hidden = ENTRIES.length <= shown;
+  more.textContent = `Show more (${ENTRIES.length - shown} older)`;
+}
+
+async function load() {
+  try {
+    const r = await fetch("/api/log", { cache: "no-store" });
+    const d = await r.json();
+    META = d; ENTRIES = d.entries || [];
+    document.getElementById("zip").textContent = d.zip;
+    document.getElementById("miles").textContent = d.maxMiles;
+    if (!d.ok) throw new Error(d.error);
+  } catch (e) {
+    document.getElementById("live").innerHTML = `<div class="card err" style="margin-top:10px">Couldn't load the log: ${esc(e.message)}</div>`;
+  }
+  renderNow(); renderWindows(); renderDelivery(); renderLog();
+}
+
+document.getElementById("more").addEventListener("click", () => { shown += 100; renderLog(); });
+document.getElementById("checkNow").addEventListener("click", async (ev) => {
+  const btn = ev.currentTarget; btn.disabled = true; btn.textContent = "Checking…";
+  const live = document.getElementById("live");
+  try {
+    const r = await fetch("/api/check?dry=1", { cache: "no-store" });
+    const e = await r.json();
+    live.innerHTML = e.ok
+      ? `<p class="mut" style="margin:14px 0 6px">Live result · ${when(e.t)} (not saved to the log)</p><div class="grid">${statusCards(e)}</div>`
+      : `<div class="card err" style="margin-top:10px">Live check failed: ${esc(e.error)}</div>`;
+  } catch (err) {
+    live.innerHTML = `<div class="card err" style="margin-top:10px">${esc(err.message)}</div>`;
+  } finally { btn.disabled = false; btn.textContent = "Check now"; }
+});
+load();
+</script>
+</body>
+</html>

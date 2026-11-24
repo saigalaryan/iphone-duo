@@ -1,0 +1,5 @@
+node_modules/
+.vercel/
+.env*
+__pycache__/
+.duo_watch_state.json
