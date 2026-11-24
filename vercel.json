@@ -17,7 +17,7 @@
   "redirects": [
     {
       "source": "/apple",
-      "destination": "https://www.apple.com/shop/fulfillment-messages?pl=true&mts.0=regular&mts.1=compact&parts.0=MK1E4LL/A&parts.1=MK1F4LL/A&location=37215",
+      "destination": "https://www.apple.com/shop/retail/pickup-message?pl=true&location=37215&parts.0=MK1E4LL/A&parts.1=MK1F4LL/A",
       "permanent": false
     }
   ]

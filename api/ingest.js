@@ -43,7 +43,7 @@ export default async function handler(req, res) {
 
   // Short, readable reply - shows up in the Shortcut when you run it by hand
   const lines = entry.ok
-    ? Object.values(entry.items).map((it, i) => `${i ? "Night Sky" : "Star White"}: ${it.pickup.length ? "PICKUP AVAILABLE" : "no pickup"}; ${it.delivery || "no delivery estimate"}`)
+    ? Object.values(entry.items).map((it, i) => `${i ? "Night Sky" : "Star White"}: ${it.pickup.length ? "PICKUP AVAILABLE at " + it.pickup.map((s) => s.split(" (")[0]).join(", ") : "no pickup nearby"}`)
     : [`Failed: ${entry.error}`];
   const debug = entry.ok ? undefined : {
     contentType: req.headers?.["content-type"] || null,
