@@ -20,7 +20,8 @@ Status page  ─▶ /api/log (history) + /api/check?dry=1 (live, not saved)
 1. **Phone:** you're already subscribed to `iphoneduo_alerts` in ntfy. Anyone who guesses that name can read the alerts. To change it, set `NTFY_TOPIC` on Vercel and subscribe to the new name.
 2. **Deploy:** push this folder to GitHub → import it in Vercel (Framework preset: **Other**, no build command).
 3. **Env var:** Vercel → Settings → Environment Variables → add `CRON_SECRET` = any long random string.
-4. **Storage (required for the history page):** Vercel → **Storage** → add **Upstash Redis** (free) → connect it to this project. The env vars are picked up automatically. **Redeploy** afterwards.
+4. **Storage (optional):** without it, every check is posted silently to your ntfy app with its timestamp, so the ntfy app is your history. With it, the status page also shows the full history.
+   To add it: Vercel → **Storage** → add **Upstash Redis** (free) → connect it to this project. The env vars are picked up automatically. **Redeploy** afterwards.
 5. **Hourly checks:** Vercel's free plan only allows a daily cron, so the included GitHub Action runs the check every hour. In the GitHub repo → Settings → Secrets and variables → Actions → add:
    - `APP_URL`: your Vercel URL, e.g. `https://duo-watch-xyz.vercel.app` (no trailing slash)
    - `CRON_SECRET`: the same value as on Vercel

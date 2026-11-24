@@ -93,7 +93,7 @@ function renderNow() {
   const latest = ENTRIES.find((e) => e.ok);
   const latestAny = ENTRIES[0];
   document.getElementById("now").innerHTML = latest ? statusCards(latest)
-    : `<div class="card empty">${META.storage === false ? "Storage isn't connected yet. Add Upstash Redis in Vercel (see README)." : "No saved checks yet. The first hourly check will appear here."}</div>`;
+    : `<div class="card empty">${META.storage === false ? "No storage connected, so the check history is in your ntfy app: every hourly check is posted there silently with its time. Tap “Check now” for a live result." : "No saved checks yet. The first hourly check will appear here."}</div>`;
   document.getElementById("lastChecked").innerHTML = latestAny
     ? `Last check ${ago(latestAny.t)}${latestAny.ok ? "" : ` · <span class="err">failed: ${esc(latestAny.error)}</span>`}` : "";
 }

@@ -51,6 +51,20 @@ export default async function handler(req, res) {
     }
   }
 
+  // No storage connected → keep the history in the ntfy app instead:
+  // every check is posted as a silent (no sound / no buzz) entry with its timestamp.
+  if (!HAS_STORAGE && process.env.SILENT_LOG !== "0") {
+    const stamp = new Date(entry.t).toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true,
+    });
+    const anyPickup = entry.ok && Object.values(entry.items).some((it) => it.pickup.length > 0);
+    await notify(`Check ${stamp} IST - ${!entry.ok ? "failed" : anyPickup ? "AVAILABLE" : "not available"}`, summaryText(entry), {
+      priority: "min",
+      tags: !entry.ok ? "warning" : anyPickup ? "green_circle" : "red_circle",
+      click: BUY_URLS["MK1E4LL/A"],
+    });
+  }
+
   let saved = false;
   if (HAS_STORAGE) {
     try {
