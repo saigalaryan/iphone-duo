@@ -50,7 +50,7 @@
   <div id="now" class="grid"><div class="card empty">Loading…</div></div>
   <div class="row" style="margin-top:6px">
     <span class="mut" id="lastChecked"></span>
-    <button id="checkNow">Check now</button>
+    <button id="checkNow">Refresh</button>
   </div>
   <div id="live"></div>
 
@@ -93,7 +93,7 @@ function renderNow() {
   const latest = ENTRIES.find((e) => e.ok);
   const latestAny = ENTRIES[0];
   document.getElementById("now").innerHTML = latest ? statusCards(latest)
-    : `<div class="card empty">${META.storage === false ? "No storage connected, so the check history is in your ntfy app: every hourly check is posted there silently with its time. Tap “Check now” for a live result." : "No saved checks yet. The first hourly check will appear here."}</div>`;
+    : `<div class="card empty">${META.storage === false ? "No storage connected, so the history is in your ntfy app: every check from your iPhone Shortcut is posted there silently with its time." : "No saved checks yet. Run the iPhone Shortcut once and tap Refresh."}</div>`;
   document.getElementById("lastChecked").innerHTML = latestAny
     ? `Last check ${ago(latestAny.t)}${latestAny.ok ? "" : ` · <span class="err">failed: ${esc(latestAny.error)}</span>`}` : "";
 }
@@ -171,17 +171,9 @@ async function load() {
 
 document.getElementById("more").addEventListener("click", () => { shown += 100; renderLog(); });
 document.getElementById("checkNow").addEventListener("click", async (ev) => {
-  const btn = ev.currentTarget; btn.disabled = true; btn.textContent = "Checking…";
-  const live = document.getElementById("live");
-  try {
-    const r = await fetch("/api/check?dry=1", { cache: "no-store" });
-    const e = await r.json();
-    live.innerHTML = e.ok
-      ? `<p class="mut" style="margin:14px 0 6px">Live result · ${when(e.t)} (not saved to the log)</p><div class="grid">${statusCards(e)}</div>`
-      : `<div class="card err" style="margin-top:10px">Live check failed: ${esc(e.error)}</div>`;
-  } catch (err) {
-    live.innerHTML = `<div class="card err" style="margin-top:10px">${esc(err.message)}</div>`;
-  } finally { btn.disabled = false; btn.textContent = "Check now"; }
+  const btn = ev.currentTarget; btn.disabled = true; btn.textContent = "Refreshing…";
+  shown = 50; await load();
+  btn.disabled = false; btn.textContent = "Refresh";
 });
 load();
 </script>
