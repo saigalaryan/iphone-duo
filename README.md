@@ -1,6 +1,6 @@
 # iPhone Duo Watch
 
-Watches Apple Store USA for **iPhone Duo 256GB, Star White or Night Sky, "Connect to any carrier later" (unlocked), full price, no trade-in, no AppleCare**, near **ZIP 37215** (Nashville, TN).
+Watches Apple Store USA (in-store pickup near the ZIP **and** online delivery dates to it) for **iPhone Duo 256GB, Star White or Night Sky, "Connect to any carrier later" (unlocked), full price, no trade-in, no AppleCare**, near **ZIP 37215** (Nashville, TN).
 
 - **Phone alerts (ntfy topic `iphoneduo_alerts`):** sent when either colour becomes available for pickup within 50 miles, when Apple's delivery estimate changes, if checks fail 3 times in a row, plus a daily status at 8:00 PM IST.
 - **Status page:** a timestamped history of every check (IST and Nashville time), the exact windows when each colour was available and for how long, and every delivery-estimate change.
